@@ -39,6 +39,7 @@ import coredevices.ring.api.NotionApi
 import coredevices.ring.audio.M4aEncoder
 import coredevices.ring.database.Preferences
 import coredevices.ring.database.PreferencesImpl
+import coredevices.ring.database.WatchIndexPreferences
 import coredevices.ring.database.room.Migrate33To34
 import coredevices.ring.database.room.RingDatabase
 import coredevices.ring.database.room.repository.McpSandboxRepository
@@ -78,6 +79,8 @@ import coredevices.ring.encryption.DocumentEncryptor
 import coredevices.ring.encryption.EncryptionManager
 import coredevices.ring.service.RingHacksDelegate
 import coredevices.ring.storage.RealRecordingStorage
+import coredevices.ring.service.recordings.WatchIndexRecordingSink
+import coredevices.util.dictation.WatchIndexAudioSink
 import coredevices.ring.storage.RecordingStorage
 import coredevices.ring.util.trace.RingTraceSession
 import coredevices.ring.util.trace.TraceSessionExporter
@@ -189,6 +192,8 @@ val experimentalModule = module {
     singleOf(::ReminderDeepLinkResolver)
     singleOf(::ReminderCompleter)
     singleOf(::PreferencesImpl) binds arrayOf(Preferences::class, BasePreferences::class)
+    singleOf(::WatchIndexPreferences)
+    singleOf(::WatchIndexRecordingSink) bind WatchIndexAudioSink::class
     singleOf(::RingTraceSession)
     singleOf(::TraceSessionExporter)
 

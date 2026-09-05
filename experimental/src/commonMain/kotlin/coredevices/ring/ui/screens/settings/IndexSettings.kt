@@ -1,5 +1,7 @@
 package coredevices.ring.ui.screens.settings
 
+import coredevices.ring.database.WatchIndexPreferences
+
 import BugReportButton
 import CommonRoutes
 import CoreNav
@@ -154,6 +156,8 @@ internal fun UriHandler.openUrlSafely(url: String) {
 @Composable
 fun IndexSettings(coreNav: CoreNav) {
     val viewModel = koinViewModel<SettingsViewModel>()
+    val watchIndexPreferences = koinInject<WatchIndexPreferences>()
+    val watchIndexEnabled by watchIndexPreferences.enabled.collectAsState()
     val webhookViewModel = koinViewModel<IndexWebhookSettingsViewModel>()
     val llmMode by viewModel.llmMode.collectAsState()
     val localLlmSupported by viewModel.localLlmSupported.collectAsState()
@@ -362,6 +366,27 @@ fun IndexSettings(coreNav: CoreNav) {
                     },
                     supporting = if (ringPaired) "Paired" else "Not paired",
                 )
+            }
+
+            if (platform.isAndroid) {
+                item {
+                    ListItem(
+                        headlineContent = { Text("PT2 Index capture") },
+                        supportingContent = {
+                            Text(
+                                "Allow the Index Capture watch app to add recordings to Index. " +
+                                    "Uses existing Index processing, integrations and storage. " +
+                                    "Requires a connected phone."
+                            )
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = watchIndexEnabled,
+                                onCheckedChange = watchIndexPreferences::setEnabled,
+                            )
+                        },
+                    )
+                }
             }
 
             // --- Button Actions section ---

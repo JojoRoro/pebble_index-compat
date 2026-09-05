@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.launch
 import kotlin.uuid.Uuid
@@ -100,15 +100,15 @@ class VoiceSessionManager(
         watchScope.launch {
             voiceService.sessionSetupRequests.flowOn(Dispatchers.IO).collectLatest { setupRequest ->
                 logger.i { "New voice session started: $setupRequest" }
-                var audioFrameFlowCollected = false
+                var audioFrameFlowCompleted = false
                 val audioFrameFlow = audioStreamService.dataFlowForSession(setupRequest.sessionId.toUShort())
                     .transform { transfer ->
                         transfer.frames
                             .map { frame -> frame.data.get() }
                             .forEach { emit(it) }
                     }
-                    .onStart {
-                        audioFrameFlowCollected = true
+                    .onCompletion { cause ->
+                        audioFrameFlowCompleted = cause == null
                     }
                 val appInitiated = setupRequest.appUuid != Uuid.NIL
                 if (setupRequest.encoderInfo == null) {
@@ -120,7 +120,7 @@ class VoiceSessionManager(
                     ))
                     return@collectLatest
                 }
-                if (transcriptionProvider.canServeSession()) {
+                if (transcriptionProvider.canServeSession(setupRequest.appUuid)) {
                     voiceService.send(makeSetupResult(
                         sessionType = setupRequest.sessionType,
                         result = Result.Success,
@@ -143,7 +143,8 @@ class VoiceSessionManager(
                     transcriptionProvider.transcribe(
                         setupRequest.encoderInfo,
                         audioFrameFlow,
-                        isNotificationReply = setupRequest.appUuid == Uuid.NIL || setupRequest.appUuid == SystemAppIDs.NOTIFICATIONS_APP_UUID
+                        isNotificationReply = setupRequest.appUuid == Uuid.NIL || setupRequest.appUuid == SystemAppIDs.NOTIFICATIONS_APP_UUID,
+                        appUuid = setupRequest.appUuid,
                     )
                 } catch (e: CancellationException) {
                     logger.d { "Voice session cancelled" }
@@ -161,8 +162,8 @@ class VoiceSessionManager(
                         is TranscriptionResult.ConnectionError -> "ConnectionError"
                     }
                 }" }
-                if (!audioFrameFlowCollected) {
-                    logger.w { "Audio frames not collected, sending audio stop packet" }
+                if (!audioFrameFlowCompleted) {
+                    logger.w { "Audio stream not completed, sending audio stop packet" }
                     audioStreamService.send(AudioStream.StopTransfer(setupRequest.sessionId.toUShort()))
                 }
                 voiceService.send(

@@ -5,6 +5,7 @@ on:
     branches-ignore:
       - "dependabot/**"
   pull_request:
+  workflow_dispatch:
 
 jobs:
   android:
@@ -36,6 +37,12 @@ jobs:
         env:
           GITHUB_ACTOR: ${{ secrets.READ_PACKAGES_ACTOR }}
           GITHUB_TOKEN: ${{ secrets.READ_PACKAGES_TOKEN }}
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: pebble-index-compat-debug-apk
+          path: androidApp/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
 
   ios:
     runs-on: macos-15

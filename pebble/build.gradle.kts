@@ -65,6 +65,7 @@ kotlin {
         all {
             languageSettings {
                 optIn("kotlin.uuid.ExperimentalUuidApi")
+                optIn("kotlin.ExperimentalUnsignedTypes")
                 optIn("androidx.compose.material3.ExperimentalMaterial3Api")
                 optIn("androidx.compose.foundation.layout.ExperimentalLayoutApi")
                 optIn("kotlin.time.ExperimentalTime")
